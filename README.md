@@ -1,4 +1,4 @@
-##VR-Doctor-Fish##
+#VR-Doctor-Fish##
 Experience a relaxing, virtual fish therapy from the comfort of your home.
 
 IVE 2026 Winter School Haptics x XR
