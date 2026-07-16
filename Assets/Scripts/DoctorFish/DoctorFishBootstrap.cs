@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.XR;
@@ -8,7 +9,8 @@ namespace DoctorFish
     /// <summary>
     /// Builds the whole experience when the scene starts: the seated XR
     /// camera rig, lighting, the wooden foot-spa tub with animated water,
-    /// the virtual legs, the creatures and the three controllers. Everything
+    /// the virtual feet (with short ankle stubs carrying the haptic node
+    /// anchors), the creatures and the three controllers. Everything
     /// is generated from primitives and the base materials in Resources, so
     /// the scene file itself stays tiny.
     ///
@@ -28,6 +30,8 @@ namespace DoctorFish
         Transform poolRoot;
         Transform leftFoot;
         Transform rightFoot;
+        readonly Dictionary<int, Transform> hapticAnchors =
+            new Dictionary<int, Transform>();
         Light sun;
         WaterSurface water;
         TextMesh statusText;
@@ -51,8 +55,8 @@ namespace DoctorFish
             cameraGo.tag = "MainCamera";
             cameraGo.transform.SetParent(rig.transform, false);
             // Desktop start pose: leaning a little forward over the tub so
-            // the whole leg is in frame from the knees to the toes. With a
-            // headset the tracked pose replaces this.
+            // both feet are in frame in the water. With a headset the
+            // tracked pose replaces this.
             cameraGo.transform.localPosition =
                 new Vector3(0f, seatedEyeHeight + 0.1f, 0.3f);
 
@@ -75,7 +79,7 @@ namespace DoctorFish
             poseDriver.positionInput = new InputActionProperty(position);
             poseDriver.rotationInput = new InputActionProperty(rotation);
 
-            // Look steeply down at the feet so the shins never hide them.
+            // Look steeply down at the feet in the tub.
             var desktop = cameraGo.AddComponent<DesktopCameraController>();
             desktop.transform.localRotation = Quaternion.Euler(68f, 0f, 0f);
         }
@@ -157,25 +161,43 @@ namespace DoctorFish
             water.radius = tubRadius * 0.94f;
         }
 
+        // Physical position of each vibration unit on one leg, matching the
+        // layout table in haptics/README.md (left leg = even addresses,
+        // right leg = left + 1). Offsets are metres from the leg root at
+        // (x, tub floor, poolCentre.z); positive x is outward, positive z
+        // is toward the toes.
+        static readonly (int addr, Vector3 offset)[] HapticNodeLayout =
+        {
+            (0,  new Vector3(0f, 0.24f, -0.015f)),  // A1 top front (shin)
+            (16, new Vector3(0f, 0.205f, -0.09f)),  // B1 top back
+            (2,  new Vector3(0f, 0.145f, -0.005f)), // A2 mid front (shin)
+            (18, new Vector3(0f, 0.075f, -0.085f)), // B2 low back (heel)
+            (4,  new Vector3(0f, 0.105f, 0.06f)),   // A3 bottom front (instep)
+            (32, new Vector3(0.045f, 0.06f, -0.03f)) // big (outer ankle)
+        };
+
         void BuildLegs()
         {
             var skin = CreatureBuilder.CreatureMaterial(
                 new Color(0.87f, 0.67f, 0.53f), 0.35f);
-            leftFoot = BuildLeg("LeftLeg", -0.09f, skin);
-            rightFoot = BuildLeg("RightLeg", 0.09f, skin);
+            leftFoot = BuildLeg("LeftLeg", -0.09f, skin, 0);
+            rightFoot = BuildLeg("RightLeg", 0.09f, skin, 1);
         }
 
-        Transform BuildLeg(string name, float x, Material skin)
+        Transform BuildLeg(string name, float x, Material skin,
+            int addressOffset)
         {
             var leg = new GameObject(name);
             leg.transform.SetParent(poolRoot.parent, false);
 
-            // Shin: from the knee near the seat down into the water.
+            // Short shin stub: ankle to just below the waterline, only tall
+            // enough to carry the upper haptic nodes. Full-length shins read
+            // as too long from the seated viewpoint.
             var shin = CreatureBuilder.Primitive(PrimitiveType.Capsule,
                 name + "Shin", leg.transform,
-                new Vector3(x, 0.28f, poolCentre.z - 0.14f),
-                new Vector3(0.09f, 0.24f, 0.09f), skin);
-            shin.transform.localRotation = Quaternion.Euler(24f, 0f, 0f);
+                new Vector3(x, 0.16f, poolCentre.z - 0.05f),
+                new Vector3(0.08f, 0.1f, 0.08f), skin);
+            shin.transform.localRotation = Quaternion.Euler(-10f, 0f, 0f);
 
             // Foot: resting on the tub floor, toes forward.
             var foot = CreatureBuilder.Primitive(PrimitiveType.Capsule,
@@ -183,6 +205,19 @@ namespace DoctorFish
                 new Vector3(x, 0.06f, poolCentre.z + 0.02f),
                 new Vector3(0.085f, 0.1f, 0.075f), skin);
             foot.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+
+            // Anchors marking where each vibration unit sits on this leg, so
+            // the HapticNodeGlow can show every command at its real position.
+            var outward = Mathf.Sign(x);
+            foreach (var (addr, offset) in HapticNodeLayout)
+            {
+                var anchor = new GameObject($"{name}HapticNode{addr + addressOffset}");
+                anchor.transform.SetParent(leg.transform, false);
+                anchor.transform.localPosition = new Vector3(
+                    x + offset.x * outward, offset.y,
+                    poolCentre.z + offset.z);
+                hapticAnchors[addr + addressOffset] = anchor.transform;
+            }
             return foot.transform;
         }
 
@@ -270,10 +305,23 @@ namespace DoctorFish
             var haptics = gameObject.AddComponent<HapticController>();
             haptics.sender = GetComponent<VibraForge>();
 
+            // Anchor lookup for contact events (visual touch -> nearest
+            // actuator) plus visual glows at the actuator positions driven
+            // by the haptic commands, so both directions share one position.
+            var nodeMap = gameObject.AddComponent<HapticNodeMap>();
+            var nodeGlow = gameObject.AddComponent<HapticNodeGlow>();
+            nodeGlow.haptics = haptics;
+            foreach (var pair in hapticAnchors)
+            {
+                nodeMap.Register(pair.Key, pair.Value);
+                nodeGlow.Register(pair.Key, pair.Value);
+            }
+
             var manager = gameObject.AddComponent<ExperienceStateManager>();
             manager.visual = visual;
             manager.audioController = audioController;
             manager.haptics = haptics;
+            manager.nodeMap = nodeMap;
             manager.StageChanged += OnStageChanged;
         }
 

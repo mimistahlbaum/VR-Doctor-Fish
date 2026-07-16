@@ -27,6 +27,7 @@ namespace DoctorFish
         public VisualController visual;
         public AudioController audioController;
         public HapticController haptics;
+        public HapticNodeMap nodeMap;
 
         public ExperienceStage CurrentStage { get; private set; }
             = ExperienceStage.Welcome;
@@ -84,10 +85,12 @@ namespace DoctorFish
             haptics?.PlayOneShot("welcome_experience", HapticLeg.Both);
             yield return StageTimer(welcomeSeconds);
 
-            // 2. Small fish: ticklish nibbling at random points.
+            // 2. Small fish: gentle ambient water, with ticklish taps fired
+            // per nibble at the unit nearest the visible bite (see
+            // OnFishNibbled) so vibration and visuals share one position.
             EnterStage(ExperienceStage.SmallFish);
             haptics?.StopAll();
-            haptics?.PlayLoop("small_fish_nibble");
+            haptics?.PlayLoop("idle_water");
             yield return StageTimer(smallFishSeconds);
 
             // 3. Big fish: ambient water, then strong one-shot bites driven
@@ -135,9 +138,31 @@ namespace DoctorFish
             skipRequested = false;
         }
 
-        void OnFishNibbled(HapticLeg leg)
+        void OnFishNibbled(HapticLeg leg, Vector3 worldPosition)
         {
             audioController?.PlayNibble();
+            if (haptics == null || nodeMap == null)
+                return;
+            var addr = nodeMap.NearestSmallUnit(worldPosition, leg);
+            if (addr >= 0)
+                StartCoroutine(NibbleTaps(addr));
+        }
+
+        // Same feel as the authored small_fish_nibble pattern (duty 3-6,
+        // 322/384 Hz, 2-5 quick taps) but sent MovingBall-style at the one
+        // unit nearest the visible bite.
+        IEnumerator NibbleTaps(int addr)
+        {
+            var taps = UnityEngine.Random.Range(2, 6);
+            var duty = UnityEngine.Random.Range(3, 7);
+            var freq = UnityEngine.Random.value < 0.5f ? 6 : 7;
+            for (var i = 0; i < taps; i++)
+            {
+                haptics.PlayTap(addr, duty, freq,
+                    UnityEngine.Random.Range(0.04f, 0.08f));
+                yield return new WaitForSeconds(
+                    UnityEngine.Random.Range(0.1f, 0.2f));
+            }
         }
 
         void OnBigFishBit(HapticLeg leg)

@@ -100,6 +100,26 @@ assumptions. When the wiring is final, edit `LEFT_SMALL` / `LEFT_BIG` /
 `RIGHT_SMALL` / `RIGHT_BIG` at the top of `tools/generate_patterns.py` and
 regenerate.
 
+In Unity this layout is linked to the visuals in both directions, following
+the MovingBall example in the VibraForge Unity API
+([pokemon9757/VibraForge](https://github.com/pokemon9757/VibraForge), also in
+[pokemon9757/Meta-Haptics-Starter](https://github.com/pokemon9757/Meta-Haptics-Starter)):
+
+- Haptics -> visuals: `DoctorFishBootstrap` places an anchor per address on
+  the virtual leg (`HapticNodeLayout`) and `HapticNodeGlow` lights a small
+  glow at that anchor for every command the `HapticController` issues, so
+  the on-screen position always matches the vibrating unit.
+- Visuals -> haptics: small-fish nibbles report their world contact point;
+  `HapticNodeMap` resolves it to the nearest small unit on that leg and
+  `HapticController.PlayTap` sends MovingBall-style start/stop commands to
+  exactly that unit. During the small-fish stage Unity therefore plays
+  `idle_water` as the ambient loop and fires nibble taps per contact;
+  `small_fish_nibble.json` remains the pre-authored equivalent for
+  standalone playback on the hardware.
+
+If the wiring changes, update `HapticNodeLayout` alongside the generator
+constants.
+
 ## Tuning the patterns
 
 Do not edit the JSON files by hand — they are generated. Instead:
