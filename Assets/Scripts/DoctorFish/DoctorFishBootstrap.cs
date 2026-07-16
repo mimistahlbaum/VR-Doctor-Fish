@@ -8,7 +8,7 @@ namespace DoctorFish
     /// <summary>
     /// Builds the whole experience when the scene starts: the seated XR
     /// camera rig, lighting, the wooden foot-spa tub with animated water,
-    /// the virtual legs, the creatures and the three controllers. Everything
+    /// the virtual feet, the creatures and the three controllers. Everything
     /// is generated from primitives and the base materials in Resources, so
     /// the scene file itself stays tiny.
     ///
@@ -51,8 +51,8 @@ namespace DoctorFish
             cameraGo.tag = "MainCamera";
             cameraGo.transform.SetParent(rig.transform, false);
             // Desktop start pose: leaning a little forward over the tub so
-            // the whole leg is in frame from the knees to the toes. With a
-            // headset the tracked pose replaces this.
+            // both feet are in frame in the water. With a headset the
+            // tracked pose replaces this.
             cameraGo.transform.localPosition =
                 new Vector3(0f, seatedEyeHeight + 0.1f, 0.3f);
 
@@ -75,7 +75,7 @@ namespace DoctorFish
             poseDriver.positionInput = new InputActionProperty(position);
             poseDriver.rotationInput = new InputActionProperty(rotation);
 
-            // Look steeply down at the feet so the shins never hide them.
+            // Look steeply down at the feet in the tub.
             var desktop = cameraGo.AddComponent<DesktopCameraController>();
             desktop.transform.localRotation = Quaternion.Euler(68f, 0f, 0f);
         }
@@ -170,14 +170,9 @@ namespace DoctorFish
             var leg = new GameObject(name);
             leg.transform.SetParent(poolRoot.parent, false);
 
-            // Shin: from the knee near the seat down into the water.
-            var shin = CreatureBuilder.Primitive(PrimitiveType.Capsule,
-                name + "Shin", leg.transform,
-                new Vector3(x, 0.28f, poolCentre.z - 0.14f),
-                new Vector3(0.09f, 0.24f, 0.09f), skin);
-            shin.transform.localRotation = Quaternion.Euler(24f, 0f, 0f);
-
-            // Foot: resting on the tub floor, toes forward.
+            // Foot only: resting on the tub floor, toes forward. Full shins
+            // read as too long from the seated viewpoint, so the legs stay
+            // out of frame above the water.
             var foot = CreatureBuilder.Primitive(PrimitiveType.Capsule,
                 name + "Foot", leg.transform,
                 new Vector3(x, 0.06f, poolCentre.z + 0.02f),

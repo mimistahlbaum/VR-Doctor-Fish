@@ -22,8 +22,7 @@ const TUB_WALL_HEIGHT = 0.36;
 const WATER_LEVEL = 0.3;
 const SEATED_EYE_HEIGHT = 1.1;
 // Desktop (non-VR) start view: leaning a little forward over the tub and
-// looking steeply down, so the whole leg is in frame from the knees down
-// the shins to the toes and the shins never hide the feet.
+// looking steeply down, so both feet are in frame in the water.
 const DESKTOP_EYE = new THREE.Vector3(0, SEATED_EYE_HEIGHT + 0.1, -0.3);
 const DESKTOP_PITCH_DEG = -68;
 
@@ -1386,16 +1385,11 @@ const water = new WaterSurface(TUB_RADIUS * 0.94);
 water.mesh.position.set(0, WATER_LEVEL, 0);
 poolRoot.add(water.mesh);
 
-// Virtual legs: shin from the knee near the seat down into the water,
-// foot resting on the tub floor with the toes forward.
+// Virtual feet: resting on the tub floor with the toes forward. Full shins
+// read as too long from the seated viewpoint, so the legs stay out of frame
+// above the water.
 const skin = creatureMaterial(col(0.87, 0.67, 0.53), 0.35);
 function buildLeg(x) {
-  const shin = new THREE.Mesh(GEO.capsule, skin);
-  shin.position.set(x, 0.28, POOL_CENTRE.z + 0.14);
-  shin.scale.set(0.09, 0.24, 0.09);
-  shin.rotation.set(-24 * THREE.MathUtils.DEG2RAD, 0, 0);
-  scene.add(shin);
-
   const foot = new THREE.Mesh(GEO.capsule, skin);
   foot.position.set(x, 0.06, POOL_CENTRE.z - 0.02);
   foot.scale.set(0.085, 0.1, 0.075);
