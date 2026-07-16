@@ -21,6 +21,11 @@ const TUB_RADIUS = 0.5;
 const TUB_WALL_HEIGHT = 0.36;
 const WATER_LEVEL = 0.3;
 const SEATED_EYE_HEIGHT = 1.1;
+// Desktop (non-VR) start view: leaning a little forward over the tub and
+// looking steeply down, so the whole leg is in frame from the knees down
+// the shins to the toes and the shins never hide the feet.
+const DESKTOP_EYE = new THREE.Vector3(0, SEATED_EYE_HEIGHT + 0.1, -0.3);
+const DESKTOP_PITCH_DEG = -68;
 
 const Stage = {
   Welcome: 'Welcome',
@@ -601,6 +606,29 @@ class BigFishController {
     this.fishRoot.visible = false;
   }
 
+  // Gentle endless laps around the feet, never lining up a bite. Used by
+  // the calm stage; retreat() or hideImmediate() ends it.
+  swimCalm() {
+    runner.stop(this.choreography);
+    this.choreography = runner.start(this.calmSwim());
+  }
+
+  *calmSwim() {
+    if (!this.fishRoot.visible) {
+      this.fishRoot.visible = true;
+      this.fishRoot.position.copy(
+        this.angleToPosition(-Math.PI * 0.5, this.poolRadius));
+    }
+    const position = this.fishRoot.position;
+    let angle = Math.atan2(position.z, position.x);
+    const circleRadius = this.poolRadius * 0.6;
+    while (true) {
+      angle += (time.delta * Math.PI * 2) / 16;
+      this.moveAlong(this.angleToPosition(angle, circleRadius), 4);
+      yield;
+    }
+  }
+
   *encounter() {
     const firstLeg = Math.random() < 0.5 ? Leg.Left : Leg.Right;
     this.fishRoot.visible = true;
@@ -748,6 +776,7 @@ class JellyfishSwarm {
     this.leftFoot = leftFoot;
     this.rightFoot = rightFoot;
     this.entered = false;
+    this.stingingEnabled = true;
 
     const tints = [
       col(0.85, 0.5, 0.9),
@@ -782,6 +811,7 @@ class JellyfishSwarm {
 
   enter() {
     this.entered = true;
+    this.stingingEnabled = true;
     let index = 0;
     for (const jelly of this.jellies) {
       const angle = (index * Math.PI * 2) / this.jellies.length
@@ -796,6 +826,12 @@ class JellyfishSwarm {
       jelly.nextStingAllowed = time.now + rand(2, 5);
       index++;
     }
+  }
+
+  // Keep drifting and pulsing around the legs but never sting.
+  calmDrift() {
+    if (!this.entered) this.enter();
+    this.stingingEnabled = false;
   }
 
   leave() {
@@ -888,7 +924,8 @@ class JellyfishSwarm {
   }
 
   trySting(jelly, now) {
-    if (!this.entered || now < jelly.nextStingAllowed) return;
+    if (!this.entered || !this.stingingEnabled) return;
+    if (now < jelly.nextStingAllowed) return;
     if (!this.leftFoot || !this.rightFoot) return;
     const world = jelly.root.getWorldPosition(new THREE.Vector3());
     const toLeft = world.distanceTo(
@@ -1080,10 +1117,14 @@ class VisualController {
         this.jellyfish.enter();
         break;
       case Stage.Calm:
+        // Every creature stays in the water, swimming gently with no
+        // nibbles, bites or stings.
+        this.smallFish.enter();
+        this.bigFish.swimCalm();
+        this.jellyfish.calmDrift();
+        break;
       case Stage.Finished:
-        this.smallFish.leave();
-        this.bigFish.retreat();
-        this.jellyfish.leave();
+        // The creatures keep swimming until the session is restarted.
         break;
     }
   }
@@ -1140,7 +1181,7 @@ const STAGE_LABELS = {
   [Stage.SmallFish]: 'Stage 2/5 – Small fish nibbling',
   [Stage.BigFish]: 'Stage 3/5 – A big fish approaches…',
   [Stage.Jellyfish]: 'Stage 4/5 – Jellyfish drift past',
-  [Stage.Calm]: 'Stage 5/5 – The water calms',
+  [Stage.Calm]: 'Stage 5/5 – The water calms, the creatures swim on',
   [Stage.Finished]: 'Session complete – press R to run it again',
 };
 
@@ -1218,7 +1259,8 @@ class ExperienceStateManager {
     this.enterStage(Stage.Jellyfish);
     yield* this.stageTimer(this.jellyfishSeconds);
 
-    // 5. Calm: the water settles and the music fades out.
+    // 5. Calm: the water settles, every creature swims gently without
+    // touching the feet, and the music fades out.
     this.enterStage(Stage.Calm);
     yield* this.stageTimer(this.calmSeconds * 0.5);
     this.audio.fadeOutMusic(this.calmSeconds * 0.4);
@@ -1249,7 +1291,10 @@ class StatusText {
     });
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.144), material);
     this.mesh.position.copy(POOL_CENTRE)
-      .add(new THREE.Vector3(0, 0.85, -0.75));
+      .add(new THREE.Vector3(0, 0.5, -0.6));
+    // Tilt up towards the seated viewer so the steep look-down desktop
+    // view still reads it comfortably.
+    this.mesh.lookAt(DESKTOP_EYE);
     scene.add(this.mesh);
     this.set('VR Doctor Fish');
   }
@@ -1281,10 +1326,10 @@ const rig = new THREE.Group();
 rig.name = 'XR Rig';
 rig.add(camera);
 scene.add(rig);
-camera.position.set(0, SEATED_EYE_HEIGHT, 0);
-// Unity's seated pitch is 32 degrees, but on a flat screen that leaves the
-// tub at the bottom edge; 45 degrees frames the feet and fish nicely.
-camera.rotation.set(-45 * THREE.MathUtils.DEG2RAD, 0, 0);
+// Look down at the feet from a slight forward lean; in VR the headset
+// pose replaces this.
+camera.position.copy(DESKTOP_EYE);
+camera.rotation.set(DESKTOP_PITCH_DEG * THREE.MathUtils.DEG2RAD, 0, 0);
 
 const listener = new THREE.AudioListener();
 camera.add(listener);
@@ -1397,7 +1442,7 @@ window.addEventListener('resize', () => {
 // button and touch so it works on phones too.
 
 let yawDeg = 0;
-let pitchDeg = -45;
+let pitchDeg = DESKTOP_PITCH_DEG;
 let dragging = false;
 let lastPointer = { x: 0, y: 0 };
 const LOOK_SENSITIVITY = 0.15;

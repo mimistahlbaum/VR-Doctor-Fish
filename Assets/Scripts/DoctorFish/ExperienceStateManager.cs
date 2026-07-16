@@ -101,7 +101,8 @@ namespace DoctorFish
             EnterStage(ExperienceStage.Jellyfish);
             yield return StageTimer(jellyfishSeconds);
 
-            // 5. Calm: the water settles, vibrations fade, music fades out.
+            // 5. Calm: the water settles, every creature swims gently
+            // without touching the feet, vibrations fade, music fades out.
             EnterStage(ExperienceStage.Calm);
             haptics?.StopAll();
             haptics?.PlayLoop("idle_water");

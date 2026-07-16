@@ -60,6 +60,36 @@ namespace DoctorFish
                 StartCoroutine(SwimOut());
         }
 
+        /// <summary>
+        /// Gentle endless laps around the feet, never lining up a bite.
+        /// Used by the calm stage; Retreat() ends it.
+        /// </summary>
+        public void SwimCalm()
+        {
+            if (choreography != null)
+                StopCoroutine(choreography);
+            choreography = StartCoroutine(CalmSwim());
+        }
+
+        IEnumerator CalmSwim()
+        {
+            if (!fishRoot.gameObject.activeSelf)
+            {
+                fishRoot.gameObject.SetActive(true);
+                fishRoot.localPosition =
+                    AngleToPosition(Mathf.PI * 0.5f, poolRadius);
+            }
+            var position = fishRoot.localPosition;
+            var angle = Mathf.Atan2(position.z, position.x);
+            var circleRadius = poolRadius * 0.6f;
+            while (true)
+            {
+                angle += Time.deltaTime * Mathf.PI * 2f / 16f;
+                MoveAlong(AngleToPosition(angle, circleRadius), 4f);
+                yield return null;
+            }
+        }
+
         IEnumerator Encounter()
         {
             var legs = new[] { HapticLeg.Left, HapticLeg.Right };

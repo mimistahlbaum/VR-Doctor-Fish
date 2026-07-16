@@ -131,10 +131,15 @@ namespace DoctorFish
                     jellyfish?.Enter();
                     break;
                 case ExperienceStage.Calm:
+                    // Every creature stays in the water, swimming gently
+                    // with no nibbles, bites or stings.
+                    smallFish?.Enter();
+                    bigFish?.SwimCalm();
+                    jellyfish?.CalmDrift();
+                    break;
                 case ExperienceStage.Finished:
-                    smallFish?.Leave();
-                    bigFish?.Retreat();
-                    jellyfish?.Leave();
+                    // The creatures keep swimming until the session is
+                    // restarted.
                     break;
             }
         }
