@@ -29,6 +29,17 @@ Real-world setup: sit on a chair, remove your shoes, put your feet into a real b
 
 At the end the user takes off the headset and lifts their feet out of the bucket, ideally with a relaxed body and a happy mind.
 
+## Getting started
+
+1. Open the repository root in **Unity 6000.3.19f1** (the project uses URP, OpenXR and the Meta XR SDK; the Package Manager restores everything on first open).
+2. Open the scene `Assets/Scenes/DoctorFish.unity`.
+3. For haptics, start the VibraForge Python server from the [VibraForge](https://github.com/pokemon9757/VibraForge) repo (`Software_Design/Python_Server/`) so it bridges TCP to the BLE control unit. The Unity `TcpSender` connects to `localhost:9051` on play. Without the server the experience still runs with visuals and audio only.
+4. Press Play. With a Meta Quest 3 connected over Link the camera is head tracked; without a headset, hold the right mouse button and drag to look around.
+
+Debug keys: `N` skips to the next stage, `R` restarts the session.
+
+The whole scene (tub, water, legs, fish, jellyfish, lighting) is built at runtime by `DoctorFishBootstrap` from primitives and the base materials in `Assets/Resources/DoctorFish`, so there are no model imports and the scene file stays tiny. Layout and stage durations are tunable in the inspector on the `DoctorFish` object.
+
 ## System architecture
 
 The Unity application on the host computer runs the VR environment (virtual body, bucket and water, small fish, large fish, jellyfish, lighting and effects) and an **experience state manager** that steps through the stages above:
@@ -41,11 +52,13 @@ Water (gentle flow)
   -> Ending      (relaxation)
 ```
 
-Each state drives three controllers in parallel:
+Each state drives three controllers in parallel (all in [`Assets/Scripts/DoctorFish/`](Assets/Scripts/DoctorFish/)):
 
-- **Visual controller** – water effects, fish animations, jellyfish effects, scene transitions
-- **Audio controller** – water flow, fish, jellyfish and background music (see [`audio/`](audio/README.md))
-- **Haptic controller** – one vibration pattern per state, sent through the VibraForge Unity API plugin as `SendCommand(address, start_stop, intensity, frequency)` calls (see [`haptics/`](haptics/README.md))
+- **Visual controller** (`VisualController.cs`) – per-stage lighting, fog and water moods plus the creature choreography (`SmallFishSchool`, `BigFishController`, `JellyfishSwarm`, `WaterSurface`)
+- **Audio controller** (`AudioController.cs`) – water flow, fish, jellyfish and background music (see [`Assets/Resources/Audio/`](Assets/Resources/Audio/README.md))
+- **Haptic controller** (`HapticController.cs`) – plays the pattern files from `Assets/StreamingAssets/haptics/` through the VibraForge Unity API as `SendCommand(address, start_stop, intensity, frequency)` calls (see [`haptics/`](haptics/README.md))
+
+Creature contact events flow back the other way: a big fish bite or a jellyfish sting reported by the visual layer triggers the matching sound and one-shot vibration on the leg that was touched, so all three senses stay in sync.
 
 ### Haptics hardware pipeline
 
@@ -71,12 +84,17 @@ The 10-second welcome pattern sweeps a continuous sensation down the leg through
 
 ## Repository structure
 
+The repository root is the Unity project.
+
 | Folder | Contents |
 | --- | --- |
-| `audio/` | Background music and sound effects, with usage notes per file |
-| `haptics/` | VibraForge vibration patterns (JSON command files), the welcome-experience CSV spec and the Python generator |
-
-The Unity project has not been pushed yet; the pattern files are authored so they can move into the project unchanged.
+| `Assets/Scenes/DoctorFish.unity` | The experience scene (plus the original haptics starter sample scenes) |
+| `Assets/Scripts/DoctorFish/` | Experience state manager, visual, audio and haptic controllers, procedural creatures and scene bootstrap |
+| `Assets/Scripts/VibraForge/` | VibraForge Unity API (TCP sender and command wrapper) from the toolkit |
+| `Assets/StreamingAssets/haptics/` | Generated VibraForge vibration patterns (JSON command files) |
+| `Assets/Resources/Audio/` | Background music and sound effects, with usage notes per file |
+| `Assets/Resources/DoctorFish/` | Base URP materials for water, creatures, jellyfish and bubbles |
+| `haptics/` | Haptic design docs, the welcome-experience CSV spec and the Python pattern generator |
 
 ## Credits
 
