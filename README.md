@@ -30,8 +30,8 @@ Developed at the **IVE 2026 Winter School: Haptics x XR**
 
 ## Credits
 
-- Sound effects: CC0, sourced via Pixabay
-- Background music: AI generated via ACE Music
+- Sound effects: CC0, sourced via Pixabay and edited pitch via Audacity
+- Background music: Sound motifs were generated via ACE Music and Gemini, edited and composed via GarageBand
 
 ## License
 
