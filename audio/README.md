@@ -21,3 +21,8 @@ The project uses one background music track and five sound-effect files.
 ### Reserved Sound Effect
 
 `drfish_pop_se1.mp3` is a reserved sound effect and is not currently assigned to any interaction. It can be used if needed.
+
+### Sound credit
+
+- Sound effects: CC0, sourced via Pixabay and edited pitch via Audacity
+- Background music: Sound motifs were generated via ACE Music and Gemini, edited and composed via GarageBand
