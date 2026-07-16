@@ -145,6 +145,24 @@ namespace DoctorFish
             running.Add(StartCoroutine(PlayRoutine(pattern, loop, leg)));
         }
 
+        /// <summary>
+        /// Direct control in the style of the VibraForge MovingBall example:
+        /// start one unit now, stop it after <paramref name="seconds"/>.
+        /// Takes a final unit address (no left/right remap), so contact
+        /// events can fire exactly the unit nearest the visual touch.
+        /// </summary>
+        public void PlayTap(int addr, int duty, int freq, float seconds)
+        {
+            running.Add(StartCoroutine(TapRoutine(addr, duty, freq, seconds)));
+        }
+
+        IEnumerator TapRoutine(int addr, int duty, int freq, float seconds)
+        {
+            Send(addr, 1, duty, freq);
+            yield return new WaitForSeconds(seconds);
+            Send(addr, 0, 0, 0);
+        }
+
         /// <summary>Stop every running pattern and silence every unit.</summary>
         public void StopAll()
         {

@@ -7,10 +7,10 @@ namespace DoctorFish
     /// <summary>
     /// A school of small doctor fish. They swim in from the pool edge, hover
     /// around the feet and dart in for quick ticklish nibbles. Each nibble
-    /// raises the Nibbled event so the audio controller can respond; the
-    /// matching haptic loop (small_fish_nibble.json) runs independently.
-    /// All positions are local to this component's transform, which sits at
-    /// the centre of the pool floor.
+    /// raises the Nibbled event with the leg and the world contact position,
+    /// so the audio can respond and the haptics can fire the actuator
+    /// nearest the visible bite. All positions are local to this component's
+    /// transform, which sits at the centre of the pool floor.
     /// </summary>
     public class SmallFishSchool : MonoBehaviour
     {
@@ -21,7 +21,7 @@ namespace DoctorFish
         public float swimSpeed = 0.35f;
         public float nibbleDistance = 0.05f;
 
-        public event Action<HapticLeg> Nibbled;
+        public event Action<HapticLeg, Vector3> Nibbled;
 
         Transform leftFoot;
         Transform rightFoot;
@@ -185,7 +185,7 @@ namespace DoctorFish
                     {
                         f.mode = FishMode.Nibbling;
                         f.nibbleUntil = now + UnityEngine.Random.Range(0.6f, 1.4f);
-                        Nibbled?.Invoke(leg);
+                        Nibbled?.Invoke(leg, transform.TransformPoint(position));
                         continue;
                     }
                     f.target = RandomPoint(nibblingEnabled

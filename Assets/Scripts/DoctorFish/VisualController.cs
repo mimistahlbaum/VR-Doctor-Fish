@@ -31,8 +31,11 @@ namespace DoctorFish
 
         public float transitionSeconds = 2.5f;
 
-        /// <summary>A small fish nibbled a foot (audio cue).</summary>
-        public event Action<HapticLeg> FishNibbled;
+        /// <summary>
+        /// A small fish nibbled a foot (audio cue plus a haptic tap at the
+        /// unit nearest the world contact position).
+        /// </summary>
+        public event Action<HapticLeg, Vector3> FishNibbled;
         /// <summary>The big fish bit a foot (audio and haptic cue).</summary>
         public event Action<HapticLeg> BigFishBit;
         /// <summary>A jellyfish stung a leg (audio and haptic cue).</summary>
@@ -101,7 +104,8 @@ namespace DoctorFish
         void Start()
         {
             if (smallFish != null)
-                smallFish.Nibbled += leg => FishNibbled?.Invoke(leg);
+                smallFish.Nibbled += (leg, position) =>
+                    FishNibbled?.Invoke(leg, position);
             if (bigFish != null)
                 bigFish.Bit += leg => BigFishBit?.Invoke(leg);
             if (jellyfish != null)

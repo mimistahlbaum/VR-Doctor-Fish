@@ -305,17 +305,23 @@ namespace DoctorFish
             var haptics = gameObject.AddComponent<HapticController>();
             haptics.sender = GetComponent<VibraForge>();
 
-            // Visual glows at the actuator positions, driven by the haptic
-            // commands so vibration and visuals share one position.
+            // Anchor lookup for contact events (visual touch -> nearest
+            // actuator) plus visual glows at the actuator positions driven
+            // by the haptic commands, so both directions share one position.
+            var nodeMap = gameObject.AddComponent<HapticNodeMap>();
             var nodeGlow = gameObject.AddComponent<HapticNodeGlow>();
             nodeGlow.haptics = haptics;
             foreach (var pair in hapticAnchors)
+            {
+                nodeMap.Register(pair.Key, pair.Value);
                 nodeGlow.Register(pair.Key, pair.Value);
+            }
 
             var manager = gameObject.AddComponent<ExperienceStateManager>();
             manager.visual = visual;
             manager.audioController = audioController;
             manager.haptics = haptics;
+            manager.nodeMap = nodeMap;
             manager.StageChanged += OnStageChanged;
         }
 
