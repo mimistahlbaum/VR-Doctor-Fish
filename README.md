@@ -40,6 +40,25 @@ Debug keys: `N` skips to the next stage, `R` restarts the session.
 
 The whole scene (tub, water, legs, fish, jellyfish, lighting) is built at runtime by `DoctorFishBootstrap` from primitives and the base materials in `Assets/Resources/DoctorFish`, so there are no model imports and the scene file stays tiny. Layout and stage durations are tunable in the inspector on the `DoctorFish` object.
 
+## Run it in the browser
+
+The [`web/`](web/) folder contains a standalone browser version of the experience: a Three.js port of the same staged sequence, creature choreography, water and audio. No Unity install is needed.
+
+1. Serve the `web/` folder with any static file server, for example:
+   ```
+   cd web
+   python3 -m http.server 8000
+   ```
+2. Open `http://localhost:8000` and press **Start experience** (browsers require a click before audio can play).
+3. Drag to look around. The same debug keys work: `N` skips to the next stage, `R` restarts the session.
+
+On a WebXR-capable headset browser (such as the Meta Quest browser) an **Enter VR** button appears after starting, so the session can be viewed seated in VR without a PC build.
+
+Notes:
+
+- The page is fully self-contained (Three.js is vendored in `web/vendor/`, audio in `web/audio/`), so the folder can also be deployed to any static host such as GitHub Pages.
+- VibraForge haptics are not available from the browser; like the Unity build without the Python server, the browser version runs with visuals and audio only.
+
 ## System architecture
 
 The Unity application on the host computer runs the VR environment (virtual body, bucket and water, small fish, large fish, jellyfish, lighting and effects) and an **experience state manager** that steps through the stages above:
@@ -95,6 +114,7 @@ The repository root is the Unity project.
 | `Assets/Resources/Audio/` | Background music and sound effects, with usage notes per file |
 | `Assets/Resources/DoctorFish/` | Base URP materials for water, creatures, jellyfish and bubbles |
 | `haptics/` | Haptic design docs, the welcome-experience CSV spec and the Python pattern generator |
+| `web/` | Standalone Three.js browser version of the experience (visuals and audio, optional WebXR) |
 
 ## Credits
 
