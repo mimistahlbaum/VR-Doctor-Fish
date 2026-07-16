@@ -39,6 +39,7 @@ namespace DoctorFish
 
         readonly List<Jelly> jellies = new List<Jelly>();
         bool entered;
+        bool stingingEnabled = true;
 
         public void Configure(Transform left, Transform right)
         {
@@ -84,6 +85,7 @@ namespace DoctorFish
         public void Enter()
         {
             entered = true;
+            stingingEnabled = true;
             var index = 0;
             foreach (var jelly in jellies)
             {
@@ -100,6 +102,14 @@ namespace DoctorFish
                     + UnityEngine.Random.Range(2f, 5f);
                 index++;
             }
+        }
+
+        /// <summary>Keep drifting and pulsing but never sting.</summary>
+        public void CalmDrift()
+        {
+            if (!entered)
+                Enter();
+            stingingEnabled = false;
         }
 
         public void Leave()
@@ -208,7 +218,7 @@ namespace DoctorFish
 
         void TrySting(Jelly jelly, float now)
         {
-            if (!entered || now < jelly.nextStingAllowed)
+            if (!entered || !stingingEnabled || now < jelly.nextStingAllowed)
                 return;
             if (leftFoot == null || rightFoot == null)
                 return;

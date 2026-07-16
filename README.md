@@ -25,7 +25,7 @@ Real-world setup: sit on a chair, remove your shoes, put your feet into a real b
 | 2. Small fish | Small fish swim toward your feet | Tiny nibbling sounds | Soft, ticklish vibrations at random points on your legs |
 | 3. Big fish | A big fish approaches and bites | A strong splash and water movement | A strong, quick vibration |
 | 4. Jellyfish | Jellyfish glide by your legs | Whooshing and electric sounds | Sharp, high-frequency vibrations like tiny stings |
-| 5. Calm | The water becomes calm again | Gentle water flow and relaxing music | Vibrations fade away |
+| 5. Calm | The water becomes calm again while all the creatures keep swimming gently, never touching your feet | Gentle water flow and relaxing music | Vibrations fade away |
 
 At the end the user takes off the headset and lifts their feet out of the bucket, ideally with a relaxed body and a happy mind.
 
@@ -44,6 +44,10 @@ The whole scene (tub, water, legs, fish, jellyfish, lighting) is built at runtim
 
 The [`web/`](web/) folder contains a standalone browser version of the experience: a Three.js port of the same staged sequence, creature choreography, water and audio. No Unity install is needed.
 
+**Live version:** <https://mimistahlbaum.github.io/VR-Doctor-Fish/> is published with GitHub Pages. Every push to `main` that touches `web/` redeploys it automatically via [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml).
+
+To run it locally instead:
+
 1. Serve the `web/` folder with any static file server, for example:
    ```
    cd web
@@ -56,7 +60,7 @@ On a WebXR-capable headset browser (such as the Meta Quest browser) an **Enter V
 
 Notes:
 
-- The page is fully self-contained (Three.js is vendored in `web/vendor/`, audio in `web/audio/`), so the folder can also be deployed to any static host such as GitHub Pages.
+- The page is fully self-contained (Three.js is vendored in `web/vendor/`, audio in `web/audio/`), so the folder can be deployed to any static host; the GitHub Pages deployment above serves it as is.
 - VibraForge haptics are not available from the browser; like the Unity build without the Python server, the browser version runs with visuals and audio only.
 
 ## System architecture

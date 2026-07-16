@@ -50,7 +50,11 @@ namespace DoctorFish
             var cameraGo = new GameObject("Main Camera");
             cameraGo.tag = "MainCamera";
             cameraGo.transform.SetParent(rig.transform, false);
-            cameraGo.transform.localPosition = new Vector3(0f, seatedEyeHeight, 0f);
+            // Desktop start pose: leaning a little forward over the tub so
+            // the whole leg is in frame from the knees to the toes. With a
+            // headset the tracked pose replaces this.
+            cameraGo.transform.localPosition =
+                new Vector3(0f, seatedEyeHeight + 0.1f, 0.3f);
 
             var camera = cameraGo.AddComponent<Camera>();
             camera.nearClipPlane = 0.05f;
@@ -71,8 +75,9 @@ namespace DoctorFish
             poseDriver.positionInput = new InputActionProperty(position);
             poseDriver.rotationInput = new InputActionProperty(rotation);
 
+            // Look steeply down at the feet so the shins never hide them.
             var desktop = cameraGo.AddComponent<DesktopCameraController>();
-            desktop.transform.localRotation = Quaternion.Euler(32f, 0f, 0f);
+            desktop.transform.localRotation = Quaternion.Euler(68f, 0f, 0f);
         }
 
         void BuildLighting()
@@ -215,7 +220,10 @@ namespace DoctorFish
         {
             var go = new GameObject("StatusText");
             go.transform.position = poolCentre
-                + new Vector3(0f, 0.85f, 0.75f);
+                + new Vector3(0f, 0.5f, 0.6f);
+            // Tilt up towards the seated viewer so the steep look-down
+            // desktop view still reads it comfortably.
+            go.transform.rotation = Quaternion.Euler(40f, 0f, 0f);
             statusText = go.AddComponent<TextMesh>();
             statusText.text = "VR Doctor Fish";
             statusText.anchor = TextAnchor.MiddleCenter;
