@@ -67,6 +67,13 @@ namespace DoctorFish
 
         public VibraForge sender;
 
+        /// <summary>
+        /// Raised for every command (addr, mode, duty), including when no
+        /// hardware is connected, so visuals can mirror at the actuator's
+        /// position exactly what each vibration unit is doing.
+        /// </summary>
+        public event Action<int, int, int> CommandSent;
+
         readonly Dictionary<string, HapticPattern> patterns =
             new Dictionary<string, HapticPattern>();
         readonly HashSet<int> activeUnits = new HashSet<int>();
@@ -174,6 +181,8 @@ namespace DoctorFish
                 activeUnits.Add(addr);
             else
                 activeUnits.Remove(addr);
+
+            CommandSent?.Invoke(addr, mode, duty);
 
             if (sender == null)
                 return;

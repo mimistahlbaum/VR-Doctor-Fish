@@ -100,6 +100,13 @@ assumptions. When the wiring is final, edit `LEFT_SMALL` / `LEFT_BIG` /
 `RIGHT_SMALL` / `RIGHT_BIG` at the top of `tools/generate_patterns.py` and
 regenerate.
 
+In Unity this layout is mirrored visually: `DoctorFishBootstrap` places an
+anchor per address on the virtual leg (`HapticNodeLayout`) and
+`HapticNodeGlow` lights a small glow at that anchor for every command the
+`HapticController` issues, so the on-screen position always matches the
+vibrating unit. If the wiring changes, update `HapticNodeLayout` alongside
+the generator constants.
+
 ## Tuning the patterns
 
 Do not edit the JSON files by hand — they are generated. Instead:
